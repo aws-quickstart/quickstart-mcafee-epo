@@ -31,6 +31,7 @@ Metadata:
     - Label:
         default: ePO Application Server Configuration
       Parameters:
+      - FIPSEnabled
       - EPOLicenseKey
       - EPOAdminUserName
       - EPOAdminPassword
@@ -57,6 +58,7 @@ Metadata:
         default: Client Communication Configuration
       Parameters:
       - AHPort
+      - AHHttpPort
       - DXLPort
       - ClientAccessCIDR
     - Label:
@@ -99,6 +101,8 @@ Metadata:
         default: On Premises Domain Name
       OnPremiseServerDNS:
         default: On Premises Server DNS
+      FIPSEnabled:
+        default: Enable FIPS mode
       EPOLicenseKey:
         default: License Key
       EPOAdminUserName:
@@ -139,6 +143,8 @@ Metadata:
         default: DB Encryption Kms Key Id ARN
       AHPort:
         default: Agent Handler Port
+      AHHttpPort:
+        default: Agent Handler Http Port
       DXLPort:
         default: DXL Port
       ClientAccessCIDR:
@@ -234,6 +240,13 @@ Parameters:
       are planning to use
       a domain name instead of an IP address for the LDAP server.
     MaxLength: 256
+    Type: String
+  FIPSEnabled:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'No'
+    Description: Allow the ePO installation in FIPS mode.
     Type: String
   EPOLicenseKey:
     Default: ''
@@ -403,6 +416,13 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     Type: String
+  AHHttpPort:
+    Default: '80'
+    Description: The agent server communication(ASC) http port used by the McAfee
+      Agent to communicate to server.
+    MinLength: 1
+    MaxLength: 64
+    Type: String
   DXLPort:
     Default: '8883'
     Description: The DXL communication port used by the DXL client to enable secure
@@ -459,7 +479,6 @@ Parameters:
       lowercase letters, uppercase letters, hyphens, and forward slashes.'
     Type: String
 
-
 Rules:
   KeyPairsNotEmpty:
     Assertions:
@@ -484,6 +503,20 @@ Rules:
         - !Ref EPOConsolePort
         - !Ref AHPort
       AssertDescription: ePO console port and AH port should be different.
+  ValidateEPOandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref EPOConsolePort
+        - !Ref AHHttpPort
+      AssertDescription: ePO console port and AH Http port should be different.
+  ValidateAHandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref AHPort
+        - !Ref AHHttpPort
+      AssertDescription: AH secure port and AH Http port should be different.
   MatchPassword:
     Assertions:
     - Assert: !Equals
@@ -516,13 +549,17 @@ Mappings:
       MFEEPOAGENTHANDLERHVM: McAfee ePO Agent Handler Image
       MFEDXLBROKERHVM: McAfee Data Exchange Layer Image
     us-gov-west-1:
-      MFEDXLBROKERHVM: ami-863312e7
-      MFEEPOAGENTHANDLERHVM: ami-c81637a9
-      MFEEPOSERVERHVM: ami-69183908
+      MFEDXLBROKERHVM: ami-087e6997f0d5dcc79
+      MFEEPOAGENTHANDLERHVM: ami-06952306c0d1ae2a3
+      MFEEPOFIPSAGENTHANDLERHVM: ami-045886e228247cb9a
+      MFEEPOSERVERHVM: ami-0a14a48cfdf273356
+      MFEFIPSEPOSERVERHVM: ami-00089b57bab2ea83b
     us-gov-east-1:
-      MFEDXLBROKERHVM: ami-000942c980157bd5f
-      MFEEPOAGENTHANDLERHVM: ami-07d84aa83a2d9a139
-      MFEEPOSERVERHVM: ami-07ec230326fad6a6e
+      MFEEPOAGENTHANDLERHVM: ami-00c468664520e57c7
+      MFEDXLBROKERHVM: ami-07980393bceb52284
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0a17a47166aa403d8
+      MFEFIPSEPOSERVERHVM: ami-0a879354bd15c5e08
+      MFEEPOSERVERHVM: ami-0304cbdea2e08942c
   NodeTierMap:
     '1-10K': {'Tier': '1'}
     '10K-25K': {'Tier': '2'}
@@ -576,10 +613,9 @@ Conditions:
   cCreateDBStack: !Equals [!Ref DBInstanceIdentifier, '']
   cDBDefaultAllocation: !Equals [!Ref DBAllocatedStorage, '']
   cDBInstanceSizeMap1: !Equals [!Ref 'AWS::Region', eu-west-3]
+  cIsFipsMode: !Equals [!Ref FIPSEnabled, 'Yes']
 
 Resources:
-
-  # Base layer stack to create shared resources and setup
   Base:
     Type: AWS::CloudFormation::Stack
     DependsOn: [CheckStackDetailsActionV1]
@@ -601,19 +637,12 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Base
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Base-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-base.template
 
-  # Database stack
   Database:
     Type: AWS::CloudFormation::Stack
     DependsOn: [Base]
@@ -652,19 +681,12 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Database
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Database-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-database.template
 
-  # ePO Application Server Stack
   ePO:
     Type: AWS::CloudFormation::Stack
     DependsOn: [Base, PreDeployAction]
@@ -676,7 +698,12 @@ Resources:
         BaseStack: !Select [1, !Split ["/", !Ref Base]]
         OnPremiseDomainName: !Ref OnPremiseDomainName
         OnPremiseServerDNS: !Ref OnPremiseServerDNS
-        EPOImageId: !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOSERVERHVM]
+        FIPSEnabled: !Ref FIPSEnabled
+        EPOImageId:
+          Fn::If:
+          - cIsFipsMode
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEFIPSEPOSERVERHVM]
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOSERVERHVM]
         EPOLicenseKey: !Ref EPOLicenseKey
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
@@ -698,25 +725,19 @@ Resources:
         DBInstanceIdentifier: !GetAtt Base.Outputs.SolutionDBInstanceIdentifier
         ClientAccessCIDR: !Ref ClientAccessCIDR
         AHPort: !Ref AHPort
+        AHHttpPort: !Ref AHHttpPort
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-ePO
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Application-Server-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-appserver.template
 
-  # ePO Agent Handler Stack
   AH:
     Type: AWS::CloudFormation::Stack
     DependsOn: [Base, PreDeployAction]
@@ -727,6 +748,7 @@ Resources:
         KeyPairName: !Ref KeyPairName
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
         BaseStack: !Select [1, !Split ["/", !Ref Base]]
+        FIPSEnabled: !Ref FIPSEnabled
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
         ConfirmEPOAdminPassword: !Ref ConfirmEPOAdminPassword
@@ -734,12 +756,17 @@ Resources:
         EPOServerIp: !GetAtt ePO.Outputs.EPOEC2NetworkInterface
         EPOConsolePort: !Ref EPOConsolePort
         EPODatabaseName: epo-hosted-db
-        AHImageId: !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOAGENTHANDLERHVM]
+        AHImageId:
+          Fn::If:
+          - cIsFipsMode
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOFIPSAGENTHANDLERHVM]
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOAGENTHANDLERHVM]
         AHPort: !Ref AHPort
+        AHHttpPort: !Ref AHHttpPort
         ClientAccessCIDR: !Ref ClientAccessCIDR
-        AHInstanceType: c4.large
+        AHInstanceType: c5.large
         AHInstanceSize: 128
-        AHBuildVersion: 5.10.0.2968
+        AHBuildVersion: 5.10.0.3194
         DBMasterUsername: !Ref DBMasterUsername
         DBInstanceIdentifier: !GetAtt Base.Outputs.SolutionDBInstanceIdentifier
         AdminEmailAddress: !Ref AdminEmailAddress
@@ -748,19 +775,12 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-AH
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-AgentHandler-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-agenthandler.template
 
-  # Data Exchange Layer Stack
   DXL:
     Type: AWS::CloudFormation::Stack
     DependsOn: [Base, PreDeployAction]
@@ -782,28 +802,19 @@ Resources:
         ClientAccessCIDR: !Ref ClientAccessCIDR
         DXLInstanceType: c4.large
         DXLInstanceSize: 64
-        DXLBuildVersion: 5.0.2.130
+        DXLBuildVersion: 6.0.0.197
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-DXL
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-AgentHandler-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-dxl.template
 
-  # pipeline Stack
-
-  # Dashboard Stack
   Dashboard:
     Type: AWS::CloudFormation::Stack
     DependsOn: [Base, PreDeployAction]
@@ -834,23 +845,12 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Dashboard
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Dashboard-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-dashboard.template
 
-
-  ##############################################################################
-  # Pre deployment custom resource which setups the parameter store
-  # and verify email address
-  ##############################################################################
   PreDeployAction:
     Type: Custom::PreDeployAction
     Properties:
@@ -869,7 +869,7 @@ Resources:
       PropertiesSub: !Sub >
         {
           ${ProtectedInstances}${Environment}${Availability}${KeyPairName}${VPCID}${PublicSubnet1ID}${PublicSubnet2ID}${PrivateSubnet1ID}${PrivateSubnet2ID}${BastionSecurityGroupID}${EPOLicenseKey}${EPOAdminUserName}${EPOAdminPassword}${EPOPassphraseDR}
-          ${EPOConsolePort}${TelemetryOption}${EPOELBCertificateARN}${EPOAccessCIDR}${DBMasterUsername}${DBMasterUserPassword}${DBPort}${DBAllocatedStorage}${DBBackupRetentionPeriod}${DBInstanceIdentifier}${AHPort}${DXLPort}${ClientAccessCIDR}${AdminEmailAddress}
+          ${EPOConsolePort}${TelemetryOption}${EPOELBCertificateARN}${EPOAccessCIDR}${DBMasterUsername}${DBMasterUserPassword}${DBPort}${DBAllocatedStorage}${DBBackupRetentionPeriod}${DBInstanceIdentifier}${AHPort}${AHHttpPort}${DXLPort}${ClientAccessCIDR}${AdminEmailAddress}
           ${AutoCleanup}${QSS3BucketName}${QSS3KeyPrefix}
         }
       Parameters: !Sub
@@ -897,12 +897,6 @@ Resources:
         }
       - RegionQSS3BucketName: !GetAtt Base.Outputs.SourceStore
 
-  ##############################################################################
-  # post deployment custom action to finish post deployment tasks
-  # send email, add remote commands to setup agent handler virtual group
-  # add resource group
-  ##############################################################################
-  #post deployment custom action
   PostDeployAction:
     Type: Custom::PostDeployAction
     DependsOn: [Dashboard]
@@ -954,7 +948,6 @@ Resources:
         EPOInstanceID: !GetAtt ePO.Outputs.EPOEC2Instance
         AHELBName: !GetAtt AH.Outputs.AHLoadBalancer
 
-  # Base layer stack to create shared resources and setup
   Utils:
     Type: AWS::CloudFormation::Stack
     DependsOn: [WorkloadCloudformationRole]
@@ -962,17 +955,10 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Base
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Base-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-utils.template
 
-  # Check stack details custom action
   CheckStackDetailsActionV1:
     Type: Custom::CheckStackDetailsAction
     Properties:

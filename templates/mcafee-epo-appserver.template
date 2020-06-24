@@ -27,6 +27,7 @@ Metadata:
       - Label:
           default: ePO Application Server Configuration
         Parameters:
+          - FIPSEnabled
           - UsePreviousValue
           - EPOImageId
           - EPOLicenseKey
@@ -53,6 +54,7 @@ Metadata:
           default: AH Stack Configuration
         Parameters:
           - AHPort
+          - AHHttpPort
           - ClientAccessCIDR
       - Label:
           default: Administration Configuration
@@ -82,6 +84,8 @@ Metadata:
         default: On Premises Domain Name
       OnPremiseServerDNS:
         default: On Premises Server DNS
+      FIPSEnabled:
+        default: Enable FIPS mode
       UsePreviousValue:
         default: Use Previous Value
       EPOImageId:
@@ -122,6 +126,8 @@ Metadata:
         default: DB Instance Identifier
       AHPort:
         default: AH Port
+      AHHttpPort:
+        default: Agent Handler Http Port
       ClientAccessCIDR:
         default: External Access CIDR
       AdminEmailAddress:
@@ -187,6 +193,13 @@ Parameters:
       Note: This is only required if you are planning to use Active Directory if you are planning to use
       a domain name instead of an IP address for the LDAP server.
     MaxLength: 256
+    Type: String
+  FIPSEnabled:
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'No'
+    Description: Allow the ePO installation in FIPS mode.
     Type: String
   UsePreviousValue:
     Default: 1
@@ -311,6 +324,12 @@ Parameters:
   AHPort:
     Default: '443'
     Description: The agent server communication(ASC) port used by the McAfee Agent to securely communicate to server.
+    MinLength: 1
+    MaxLength: 64
+    Type: String
+  AHHttpPort:
+    Default: '80'
+    Description: The agent server communication(ASC) http port used by the McAfee Agent to communicate to server.
     MinLength: 1
     MaxLength: 64
     Type: String
@@ -565,13 +584,13 @@ Resources:
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
         - IpProtocol: tcp
@@ -620,13 +639,13 @@ Resources:
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
       Tags:
@@ -704,13 +723,13 @@ Resources:
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
       Tags:
@@ -905,7 +924,7 @@ Resources:
               command: !Join
                 - ' '
                 - - !Sub node provision.js --platform aws --component epo --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack}
-                  - !Sub --db.username ${DBMasterUsername} --db.database ${EPODatabaseName} --db.identifier ${DBInstanceIdentifier} --epo.serverdns
+                  - !Sub --fipsmode ${FIPSEnabled} --db.username ${DBMasterUsername} --db.database ${EPODatabaseName} --db.identifier ${DBInstanceIdentifier} --epo.serverdns
                   - !If
                     - cCreateR53Resources
                     - !Sub epo.${SubDomainName}
@@ -913,7 +932,7 @@ Resources:
                         - cPublicNetwork
                         - !GetAtt EPOLoadBalancer.DNSName
                         - !GetAtt EPOInternalLoadBalancer.DNSName
-                  - !Sub --epo.port 8080 --epo.secure_port ${EPOConsolePort} --ah.port ${AHPort} --threadsperchild 250
+                  - !Sub --epo.port 8080 --epo.secure_port ${EPOConsolePort} --ah.port ${AHPort} --ah.http_port ${AHHttpPort} --threadsperchild 250
                   - !If
                     - cWithProxy
                     - !Sub --proxy ${WebProxy}
@@ -1179,14 +1198,14 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 30
-      HealthCheckPort: 80
+      HealthCheckPort: !Ref AHHttpPort
       HealthCheckPath: /Software/sitestat.xml
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 15
       HealthyThresholdCount: 3
       Matcher:
         HttpCode: 200-399
-      Port: 80
+      Port: !Ref AHHttpPort
       Protocol: HTTP
       TargetGroupAttributes:
         - Key: stickiness.enabled

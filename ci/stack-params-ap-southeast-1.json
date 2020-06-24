@@ -1,102 +1,150 @@
-[
-  {
-   "ParameterKey": "ProtectedInstances",
-   "ParameterValue": "1-10K"
-  },
-  {
-   "ParameterKey": "Environment",
-   "ParameterValue": "Production"
-  },
-  {
-   "ParameterKey": "Availability",
-   "ParameterValue": "No"
-  },
-  {
-   "ParameterKey": "DomainName",
-   "ParameterValue": ""
-  },
-  {
-   "ParameterKey": "SubDomainName",
-   "ParameterValue": "$[taskcat_random-string].mcafee.com"
-  },
-  {
-   "ParameterKey": "KeyPairName",
-   "ParameterValue": "$[alfred_getkeypair]"
-  },
-  {
-   "ParameterKey": "AvailabilityZones",
-   "ParameterValue": "$[taskcat_genaz_2]"
-  },
-  {
-   "ParameterKey": "RemoteAccessCIDR",
-   "ParameterValue": "161.69.0.0/16"
-  },
-  {
-   "ParameterKey": "EPOAdminUserName",
-   "ParameterValue": "admin"
-  },
-  {
-   "ParameterKey": "EPOAdminPassword",
-   "ParameterValue": "Password1Password1!"
-  },
-  {
-   "ParameterKey": "EPOPassphraseDR",
-   "ParameterValue": "Password1Password1!"
-  },
-  {
-   "ParameterKey": "EPOAccessCIDR",
-   "ParameterValue": "161.69.0.0/16"
-  },
-  {
-   "ParameterKey": "DBMasterUsername",
-   "ParameterValue": "sa"
-  },
-  {
-   "ParameterKey": "DBMasterUserPassword",
-   "ParameterValue": "Password1Password1!"
-  },
-  {
-   "ParameterKey": "DBInstanceIdentifier",
-   "ParameterValue": ""
-  },
-  {
-   "ParameterKey": "ClientAccessCIDR",
-   "ParameterValue": "161.69.0.0/16"
-  },
-  {
-   "ParameterKey": "AdminEmailAddress",
-   "ParameterValue": "x@mcafee.com"
-  },
-  {
-   "ParameterKey": "ApproverEmailAddress",
-   "ParameterValue": "x@mcafee.com"
-  },
-  {
-   "ParameterKey": "AutoCleanup",
-   "ParameterValue": "Enable"
-  },
-  {
-   "ParameterKey": "QSS3BucketName",
-   "ParameterValue": "$[taskcat_autobucket]"
-  },
-  {
-   "ParameterKey": "QSS3KeyPrefix",
-   "ParameterValue": "quickstart-mcafee-epo/"
-  },
-  {
-    "ParameterKey": "TelemetryOption",
-    "ParameterValue": "No"
-  },
-  {
-   "ParameterKey": "ConfirmDBMasterUserPassword",
-   "ParameterValue": "Password1Password1!"
-  },
-  {
-   "ParameterKey": "ConfirmEPOAdminPassword",
-   "ParameterValue": "Password1Password1!"
-  },
-  {
-   "ParameterKey": "ConfirmEPOPassphraseDR",
-   "ParameterValue": "Password1Password1!"
-  }
-]
+  [
+    {
+     "ParameterKey": "ProtectedInstances",
+     "ParameterValue": "1-10K"
+    },
+    {
+     "ParameterKey": "Environment",
+     "ParameterValue": "Production"
+    },
+    {
+     "ParameterKey": "DomainName",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "SubDomainName",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "Availability",
+     "ParameterValue": "Yes"
+    },
+    {
+     "ParameterKey": "KeyPairName",
+     "ParameterValue": "$[alfred_getkeypair]"
+    },
+    {
+     "ParameterKey": "AvailabilityZones",
+     "ParameterValue": "$[taskcat_genaz_2]"
+    },
+    {
+     "ParameterKey": "VPCCIDR",
+     "ParameterValue": "10.0.0.0/16"
+    },
+    {
+     "ParameterKey": "PublicSubnet1CIDR",
+     "ParameterValue": "10.0.0.0/24"
+    },
+    {
+     "ParameterKey": "PublicSubnet2CIDR",
+     "ParameterValue": "10.0.1.0/24"
+    },
+    {
+     "ParameterKey": "PrivateSubnet1CIDR",
+     "ParameterValue": "10.0.2.0/24"
+    },
+    {
+     "ParameterKey": "PrivateSubnet2CIDR",
+     "ParameterValue": "10.0.3.0/24"
+    },
+    {
+     "ParameterKey": "RemoteAccessCIDR",
+     "ParameterValue": "161.69.0.0/16"
+    },
+    {
+     "ParameterKey": "EPOAdminUserName",
+     "ParameterValue": "admin"
+    },
+    {
+     "ParameterKey": "EPOAdminPassword",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "EPOPassphraseDR",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "EPOConsolePort",
+     "ParameterValue": "8443"
+    },
+    {
+     "ParameterKey": "EPOELBCertificateARN",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "EPOAccessCIDR",
+     "ParameterValue": "161.69.0.0/16"
+    },
+    {
+     "ParameterKey": "DBMasterUsername",
+     "ParameterValue": "sa"
+    },
+    {
+     "ParameterKey": "DBMasterUserPassword",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "DBPort",
+     "ParameterValue": "1433"
+    },
+    {
+     "ParameterKey": "DBAllocatedStorage",
+     "ParameterValue": "200"
+    },
+    {
+     "ParameterKey": "DBInstanceIdentifier",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "DXLPort",
+     "ParameterValue": "80"
+    },
+    {
+     "ParameterKey": "AHPort",
+     "ParameterValue": "443"
+    },
+    {
+     "ParameterKey": "ClientAccessCIDR",
+     "ParameterValue": "161.69.0.0/16"
+    },
+    {
+     "ParameterKey": "EnableAutoUpdate",
+     "ParameterValue": "Yes"
+    },
+    {
+     "ParameterKey": "AutoApproval",
+     "ParameterValue": "Update after Approval"
+    },
+    {
+     "ParameterKey": "AdminEmailAddress",
+     "ParameterValue": "x@mcafee.com"
+    },
+    {
+     "ParameterKey": "ApproverEmailAddress",
+     "ParameterValue": "x@mcafee.com"
+    },
+    {
+     "ParameterKey": "AutoCleanup",
+     "ParameterValue": "Enable"
+    },
+    {
+     "ParameterKey": "QSS3BucketName",
+     "ParameterValue": "$[taskcat_autobucket]"
+    },
+    {
+     "ParameterKey": "QSS3KeyPrefix",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "ConfirmDBMasterUserPassword",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "ConfirmEPOAdminPassword",
+     "ParameterValue": ""
+    },
+    {
+     "ParameterKey": "ConfirmEPOPassphraseDR",
+     "ParameterValue": ""
+    }
+  ]

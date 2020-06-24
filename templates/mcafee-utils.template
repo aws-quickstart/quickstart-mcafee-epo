@@ -56,7 +56,7 @@ Resources:
       Role: !GetAtt  CheckStackDetailsLambdaRole.Arn
       MemorySize: 128
       Runtime: python3.6
-      Timeout: 180
+      Timeout: 120
       Code: !If
         - cNotGovCloudCondition
         - ZipFile: !Sub |

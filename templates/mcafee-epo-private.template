@@ -27,6 +27,7 @@ Metadata:
     - Label:
         default: ePO Application Server Configuration
       Parameters:
+      - FIPSEnabled
       - EPOLicenseKey
       - EPOAdminUserName
       - EPOAdminPassword
@@ -53,6 +54,7 @@ Metadata:
         default: Client Communication Configuration
       Parameters:
       - AHPort
+      - AHHttpPort
       - DXLPort
       - ClientAccessCIDR
     - Label:
@@ -91,6 +93,8 @@ Metadata:
         default: On Premises Domain Name
       OnPremiseServerDNS:
         default: On Premises Server DNS
+      FIPSEnabled:
+        default: Enable FIPS mode
       EPOLicenseKey:
         default: License Key
       EPOAdminUserName:
@@ -131,6 +135,8 @@ Metadata:
         default: DB Encryption Kms Key Id ARN
       AHPort:
         default: Agent Handler Port
+      AHHttpPort:
+        default: Agent Handler Http Port
       DXLPort:
         default: DXL Port
       ClientAccessCIDR:
@@ -225,6 +231,13 @@ Parameters:
       are planning to use
       a domain name instead of an IP address for the LDAP server.
     MaxLength: 256
+    Type: String
+  FIPSEnabled:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'No'
+    Description: Allow the ePO installation in FIPS mode.
     Type: String
   EPOLicenseKey:
     Default: ''
@@ -394,6 +407,13 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     Type: String
+  AHHttpPort:
+    Default: '80'
+    Description: The agent server communication(ASC) http port used by the McAfee
+      Agent to communicate to server.
+    MinLength: 1
+    MaxLength: 64
+    Type: String
   DXLPort:
     Default: '8883'
     Description: The DXL communication port used by the DXL client to enable secure
@@ -513,6 +533,20 @@ Rules:
         - !Ref EPOConsolePort
         - !Ref AHPort
       AssertDescription: ePO console port and AH port should be different.
+  ValidateEPOandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref EPOConsolePort
+        - !Ref AHHttpPort
+      AssertDescription: ePO console port and AH Http port should be different.
+  ValidateAHandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref AHPort
+        - !Ref AHHttpPort
+      AssertDescription: AH secure port and AH Http port should be different.
   MatchPassword:
     Assertions:
     - Assert: !Equals
@@ -545,49 +579,71 @@ Mappings:
       MFEEPOAGENTHANDLERHVM: McAfee ePO Agent Handler Image
       MFEDXLBROKERHVM: McAfee Data Exchange Layer Image
     us-west-2:
-      MFEDXLBROKERHVM: ami-0b5d95f68bb3675c0
-      MFEEPOAGENTHANDLERHVM: ami-06a46f5a5a174541a
-      MFEEPOSERVERHVM: ami-02404011f97b41fe8
-    ca-central-1:
-      MFEDXLBROKERHVM: ami-0facdf1221994d24a
-      MFEEPOSERVERHVM: ami-067f9c7c69bc0767f
-      MFEEPOAGENTHANDLERHVM: ami-0b62463ea7e8c5c6d
-    us-east-1:
-      MFEEPOSERVERHVM: ami-0bdf52495c296b316
-      MFEEPOAGENTHANDLERHVM: ami-0f4bf8557e468f00f
-      MFEDXLBROKERHVM: ami-01dc9825a1209b3d0
+      MFEDXLBROKERHVM: ami-09f2d26a98593284d
+      MFEEPOAGENTHANDLERHVM: ami-036fb1d548cf18619
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0fdecce91e9515363
+      MFEEPOSERVERHVM: ami-091ec8c79a8462657
+      MFEFIPSEPOSERVERHVM: ami-011342fdc353b793c
     us-east-2:
-      MFEDXLBROKERHVM: ami-0f39f69a8c536d547
-      MFEEPOAGENTHANDLERHVM: ami-05a8912c694f01359
-      MFEEPOSERVERHVM: ami-07733bb7bf2d2d08e
-    eu-west-2:
-      MFEEPOAGENTHANDLERHVM: ami-024bd5e08c92efde0
-      MFEDXLBROKERHVM: ami-058699d6d731a6dd5
-      MFEEPOSERVERHVM: ami-0d9af04a475982a1d
-    eu-west-3:
-      MFEDXLBROKERHVM: ami-01e429ab1eb57525d
-      MFEEPOSERVERHVM: ami-0010918a4cd1b3718
-      MFEEPOAGENTHANDLERHVM: ami-0661e13c3f642089a
-    ap-southeast-1:
-      MFEEPOSERVERHVM: ami-023f4e606817f1d0a
-      MFEEPOAGENTHANDLERHVM: ami-06da8435a5c9077ce
-      MFEDXLBROKERHVM: ami-0dcffcc74d47cf1b8
-    ap-northeast-1:
-      MFEDXLBROKERHVM: ami-0fcbcb9d65dec8fb1
-      MFEEPOSERVERHVM: ami-0c1c0e1e97a4f580f
-      MFEEPOAGENTHANDLERHVM: ami-0da52907ac2a60c1f
-    ap-southeast-2:
-      MFEDXLBROKERHVM: ami-05089862bbc40a466
-      MFEEPOAGENTHANDLERHVM: ami-055f37e1d62e55fae
-      MFEEPOSERVERHVM: ami-0f0b9a1e9f3105e4e
-    us-west-1:
-      MFEDXLBROKERHVM: ami-0fed75b8d12b2918d
-      MFEEPOAGENTHANDLERHVM: ami-04684d95bfc3bf9e4
-      MFEEPOSERVERHVM: ami-028160799bd07681d
+      MFEDXLBROKERHVM: ami-0c57c3e793acb6791
+      MFEEPOAGENTHANDLERHVM: ami-064d1ec16fe6322ac
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0e884ba85903277db
+      MFEFIPSEPOSERVERHVM: ami-0d2e7506d9baf1a64
+      MFEEPOSERVERHVM: ami-0dd176281f20c89ab
+    us-east-1:
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0c90cb36c6c487313
+      MFEEPOAGENTHANDLERHVM: ami-0f1824e76a4965460
+      MFEDXLBROKERHVM: ami-072583e64f26b08c5
+      MFEEPOSERVERHVM: ami-08065283eb76fa887
+      MFEFIPSEPOSERVERHVM: ami-0565d8e71e9784afe
     eu-central-1:
-      MFEDXLBROKERHVM: ami-062863d2aa6453763
-      MFEEPOAGENTHANDLERHVM: ami-031c0eaef6dc00d01
-      MFEEPOSERVERHVM: ami-022732f4624ddde7d
+      MFEDXLBROKERHVM: ami-0c09e6893a509f0c7
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0839d5abd2ceba1c4
+      MFEEPOAGENTHANDLERHVM: ami-03f89374aeb20ea50
+      MFEEPOSERVERHVM: ami-0eb8980c9b359d108
+      MFEFIPSEPOSERVERHVM: ami-08fa3e776be80fcfd
+    ca-central-1:
+      MFEDXLBROKERHVM: ami-02bebd139658bad40
+      MFEEPOFIPSAGENTHANDLERHVM: ami-008b1041cbcd6ed0a
+      MFEEPOSERVERHVM: ami-0187d338385b5112d
+      MFEFIPSEPOSERVERHVM: ami-07b2773f410667061
+      MFEEPOAGENTHANDLERHVM: ami-0ce14f0345e1875e1
+    us-west-1:
+      MFEDXLBROKERHVM: ami-024f1b7e34068daca
+      MFEEPOAGENTHANDLERHVM: ami-0c716e5cfe2267d69
+      MFEEPOFIPSAGENTHANDLERHVM: ami-012ca67b1f4d497bf
+      MFEFIPSEPOSERVERHVM: ami-0f6bcb7cfab92c44e
+      MFEEPOSERVERHVM: ami-0165e07297cb270fa
+    ap-southeast-2:
+      MFEDXLBROKERHVM: ami-0c97575ceea05a35c
+      MFEEPOAGENTHANDLERHVM: ami-00b5037e8bc7888ad
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0570c15539c95e25b
+      MFEFIPSEPOSERVERHVM: ami-0ddc0c89bb47e5340
+      MFEEPOSERVERHVM: ami-031961fb9daea01bc
+    ap-northeast-1:
+      MFEDXLBROKERHVM: ami-041ebb7c44eba4fb5
+      MFEEPOSERVERHVM: ami-04d02d635d5d187e3
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0473f70703941bd05
+      MFEFIPSEPOSERVERHVM: ami-0913e0d5a8fb88f11
+      MFEEPOAGENTHANDLERHVM: ami-03fca04cb8372ae4d
+    eu-west-3:
+      MFEDXLBROKERHVM: ami-06bb5a56d8a8cadde
+      MFEEPOFIPSAGENTHANDLERHVM: ami-027d5f150899d2929
+      MFEEPOAGENTHANDLERHVM: ami-08cda9f631faf4d8e
+      MFEFIPSEPOSERVERHVM: ami-08a1f10256fcede13
+      MFEEPOSERVERHVM: ami-05f4596a5ce31047f
+    ap-southeast-1:
+      MFEFIPSEPOSERVERHVM: ami-04d1f4ea0b87ba074
+      MFEEPOFIPSAGENTHANDLERHVM: ami-0a55aab4ba3b14900
+      MFEDXLBROKERHVM: ami-0c6abbc8de6892aa4
+      MFEEPOAGENTHANDLERHVM: ami-029fcba652b88b2cf
+      MFEEPOSERVERHVM: ami-07cd11b22fc39309a
+    eu-west-2:
+      MFEEPOAGENTHANDLERHVM: ami-0fc03e12c38bfae30
+      MFEEPOFIPSAGENTHANDLERHVM: ami-09bf2672f9c6f059d
+      MFEDXLBROKERHVM: ami-00b6a350c8db7b625
+      MFEEPOSERVERHVM: ami-0b7a6d4ca22838556
+      MFEFIPSEPOSERVERHVM: ami-051564ad5544e70b0
   NodeTierMap:
     '1-10K': {'Tier': '1'}
     '10K-25K': {'Tier': '2'}
@@ -637,39 +693,7 @@ Mappings:
     'Development': {'1': '1000', '2': '1000', '3': '1000', '4': '1000', '5': '1000',
       '6': '1000', '7': '1000'}
   BuildVersionMap:
-    ap-southeast-2:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
-    us-east-2:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
-    eu-west-2:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
-    eu-west-3:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
-    us-west-2:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
-    us-west-1:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
     eu-central-1:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
-    ap-northeast-1:
-      EPO: 5.10.0.2428.18
-      AH: 5.10.0.2428.18
-      DXL: 6.0.0.197.2
-    ap-southeast-1:
       EPO: 5.10.0.2428.18
       AH: 5.10.0.2428.18
       DXL: 6.0.0.197.2
@@ -677,7 +701,39 @@ Mappings:
       EPO: 5.10.0.2428.18
       AH: 5.10.0.2428.18
       DXL: 6.0.0.197.2
+    us-west-1:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
+    eu-west-3:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
+    ap-southeast-2:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
+    us-west-2:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
+    eu-west-2:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
     us-east-1:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
+    ap-southeast-1:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
+    us-east-2:
+      EPO: 5.10.0.2428.18
+      AH: 5.10.0.2428.18
+      DXL: 6.0.0.197.2
+    ap-northeast-1:
       EPO: 5.10.0.2428.18
       AH: 5.10.0.2428.18
       DXL: 6.0.0.197.2
@@ -687,6 +743,7 @@ Conditions:
   cAutoUpdate: !Equals [!Ref EnableAutoUpdate, 'Yes']
   cDBDefaultAllocation: !Equals [!Ref DBAllocatedStorage, '']
   cDBInstanceSizeMap1: !Equals [!Ref 'AWS::Region', eu-west-3]
+  cIsFipsMode: !Equals [!Ref FIPSEnabled, 'Yes']
 
 Resources:
 
@@ -712,14 +769,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Base
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Base-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-base.template
@@ -767,14 +818,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Database
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Database-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-database.template
@@ -793,7 +838,12 @@ Resources:
         BaseStack: !Select [1, !Split ["/", !Ref Base]]
         OnPremiseDomainName: !Ref OnPremiseDomainName
         OnPremiseServerDNS: !Ref OnPremiseServerDNS
-        EPOImageId: !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOSERVERHVM]
+        FIPSEnabled: !Ref FIPSEnabled
+        EPOImageId:
+          Fn::If:
+          - cIsFipsMode
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEFIPSEPOSERVERHVM]
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOSERVERHVM]
         EPOLicenseKey: !Ref EPOLicenseKey
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
@@ -815,20 +865,15 @@ Resources:
         DBInstanceIdentifier: !GetAtt Base.Outputs.SolutionDBInstanceIdentifier
         ClientAccessCIDR: !Ref ClientAccessCIDR
         AHPort: !Ref AHPort
+        AHHttpPort: !Ref AHHttpPort
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-ePO
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Application-Server-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-appserver.template
@@ -846,6 +891,7 @@ Resources:
         KeyPairName: !Ref KeyPairName
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
         BaseStack: !Select [1, !Split ["/", !Ref Base]]
+        FIPSEnabled: !Ref FIPSEnabled
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
         ConfirmEPOAdminPassword: !Ref ConfirmEPOAdminPassword
@@ -853,12 +899,17 @@ Resources:
         EPOServerIp: !GetAtt ePO.Outputs.EPOEC2NetworkInterface
         EPOConsolePort: !Ref EPOConsolePort
         EPODatabaseName: epo-hosted-db
-        AHImageId: !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOAGENTHANDLERHVM]
+        AHImageId:
+          Fn::If:
+          - cIsFipsMode
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOFIPSAGENTHANDLERHVM]
+          - !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOAGENTHANDLERHVM]
         AHPort: !Ref AHPort
+        AHHttpPort: !Ref AHHttpPort
         ClientAccessCIDR: !Ref ClientAccessCIDR
-        AHInstanceType: c4.large
+        AHInstanceType: c5.large
         AHInstanceSize: 128
-        AHBuildVersion: 5.10.0.2968
+        AHBuildVersion: 5.10.0.3194
         DBMasterUsername: !Ref DBMasterUsername
         DBInstanceIdentifier: !GetAtt Base.Outputs.SolutionDBInstanceIdentifier
         AdminEmailAddress: !Ref AdminEmailAddress
@@ -867,14 +918,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-AH
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-AgentHandler-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-agenthandler.template
@@ -903,21 +948,15 @@ Resources:
         ClientAccessCIDR: !Ref ClientAccessCIDR
         DXLInstanceType: c4.large
         DXLInstanceSize: 64
-        DXLBuildVersion: 5.0.2.130
+        DXLBuildVersion: 6.0.0.197
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-DXL
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-AgentHandler-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-dxl.template
@@ -945,14 +984,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Pipeline
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Pipeline-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-pipeline.template
@@ -989,23 +1022,12 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-Dashboard
-      - Key: Owner
-        Value: !Ref AdminEmailAddress
-      - Key: Environment
-        Value: !Ref Environment
       - Key: Product
         Value: McAfee-ePO-Dashboard-Stack
-      - Key: Solution
-        Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-dashboard.template
 
-
-  ##############################################################################
-  # Pre deployment custom resource which setups the parameter store
-  # and verify email address
-  ##############################################################################
   PreDeployAction:
     Type: Custom::PreDeployAction
     Properties:
@@ -1024,7 +1046,7 @@ Resources:
       PropertiesSub: !Sub >
         {
           ${ProtectedInstances}${Environment}${Availability}${KeyPairName}${VPCID}${PrivateSubnet1ID}${PrivateSubnet2ID}${EPOLicenseKey}${EPOAdminUserName}${EPOAdminPassword}${EPOPassphraseDR}
-          ${EPOConsolePort}${TelemetryOption}${EPOELBCertificateARN}${EPOAccessCIDR}${DBMasterUsername}${DBMasterUserPassword}${DBPort}${DBAllocatedStorage}${DBBackupRetentionPeriod}${DBInstanceIdentifier}${AHPort}${DXLPort}${ClientAccessCIDR}${EnableAutoUpdate}${AutoApproval}${AdminEmailAddress}${ApproverEmailAddress}
+          ${EPOConsolePort}${TelemetryOption}${EPOELBCertificateARN}${EPOAccessCIDR}${DBMasterUsername}${DBMasterUserPassword}${DBPort}${DBAllocatedStorage}${DBBackupRetentionPeriod}${DBInstanceIdentifier}${AHPort}${AHHttpPort}${DXLPort}${ClientAccessCIDR}${EnableAutoUpdate}${AutoApproval}${AdminEmailAddress}${ApproverEmailAddress}
           ${AutoCleanup}${QSS3BucketName}${QSS3KeyPrefix}
         }
 
@@ -1057,12 +1079,6 @@ Resources:
       ToEmailAddresses: !Ref AdminEmailAddress
       CcEmailAddress: !Ref ApproverEmailAddress
 
-  ##############################################################################
-  # post deployment custom action to finish post deployment tasks
-  # send email, add remote commands to setup agent handler virtual group
-  # add resource group
-  ##############################################################################
-  #post deployment custom action
   PostDeployAction:
     Type: Custom::PostDeployAction
     DependsOn: [Dashboard]
@@ -1144,7 +1160,6 @@ Resources:
         Value: McAfee-ePO
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-utils.template
 
-  # Check stack details custom action
   CheckStackDetailsActionV1:
     Type: Custom::CheckStackDetailsAction
     Properties:
@@ -1153,8 +1168,6 @@ Resources:
       SubDomainName: ''
       StackName: !Sub ${AWS::StackName}
 
-  # Workload Cloudformation IAM Role for AWS CodePipeline
-  # Note: This role is to perfom stack updates on administrator behalf and passed only to AWS CodePipeline
   WorkloadCloudformationRole:
     Type: AWS::IAM::Role
     Properties:
