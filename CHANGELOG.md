@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.187 (6/24/20)
+
+### New Features:
+- **McAfee ePolicy Orchestrator 5.10.0 Update 7 (2.0.0.907)**
+    * This includes new images with [Update 7](https://docs.mcafee.com/bundle/epolicy-orchestrator-5.10.0-release-notes/page/GUID-91E47324-1642-4EE6-8776-3230C0EA38F8.html) for both ePO and Agent Handlers. Update 7 is cumulative in nature and includes fixes from Update 1.
+- **Support for FIPS**
+    * The deployment allows to choose FIPS mode which runs ePO and Agent Handler images in FIPS compliant mode
+- **Custom Agent Handler HTTP Port**
+    * You can configure Agent Handler HTTP port as part of deployment input parameter
+- **New updated packages, extensions and bundle**
+    * AH version: 5.10.0.3194
+    * MA extension: 5.6.5.102
+    * MA Package: 5.6.5.236
+    * Support Center: 5.10.0.426
+
 ## 1.0.180 (1/21/2019)
 
 ### New Features:

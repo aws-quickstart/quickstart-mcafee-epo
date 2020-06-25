@@ -32,6 +32,7 @@ Metadata:
     - Label:
         default: ePO Application Server Configuration
       Parameters:
+      - FIPSEnabled
       - EPOLicenseKey
       - EPOAdminUserName
       - EPOAdminPassword
@@ -58,6 +59,7 @@ Metadata:
         default: Client Communication Configuration
       Parameters:
       - AHPort
+      - AHHttpPort
       - DXLPort
       - ClientAccessCIDR
     - Label:
@@ -100,6 +102,8 @@ Metadata:
         default: On Premises Domain Name
       OnPremiseServerDNS:
         default: On Premises Server DNS
+      FIPSEnabled:
+        default: Enable FIPS mode
       EPOLicenseKey:
         default: License Key
       EPOAdminUserName:
@@ -140,6 +144,8 @@ Metadata:
         default: DB Encryption Kms Key Id ARN
       AHPort:
         default: Agent Handler Port
+      AHHttpPort:
+        default: Agent Handler Http Port
       DXLPort:
         default: DXL Port
       ClientAccessCIDR:
@@ -261,6 +267,13 @@ Parameters:
       are planning to use
       a domain name instead of an IP address for the LDAP server.
     MaxLength: 256
+    Type: String
+  FIPSEnabled:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'No'
+    Description: Allow the ePO installation in FIPS mode.
     Type: String
   EPOLicenseKey:
     Default: ''
@@ -433,6 +446,13 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     Type: String
+  AHHttpPort:
+    Default: '80'
+    Description: The agent server communication(ASC) http port used by the McAfee
+      Agent to communicate to server.
+    MinLength: 1
+    MaxLength: 64
+    Type: String
   DXLPort:
     Default: '8883'
     Description: The DXL communication port used by the DXL client to enable secure
@@ -505,6 +525,20 @@ Rules:
         - !Ref EPOConsolePort
         - !Ref AHPort
       AssertDescription: ePO console port and AH port should be different.
+  ValidateEPOandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref EPOConsolePort
+        - !Ref AHHttpPort
+      AssertDescription: ePO console port and AH Http port should be different.
+  ValidateAHandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref AHPort
+        - !Ref AHHttpPort
+      AssertDescription: AH secure port and AH Http port should be different.
   MatchPassword:
     Assertions:
     - Assert: !Equals
@@ -535,10 +569,10 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-gov-west-1:
-      MFEBASTIONHVM: ami-b83312d9
+      MFEBASTIONHVM: ami-0a19b12b881b3f5ff
 
     us-gov-east-1:
-      MFEBASTIONHVM: ami-0f47a72657789812a
+      MFEBASTIONHVM: ami-0b4efdc1d6f6bc379
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
@@ -623,6 +657,7 @@ Resources:
         BastionSecurityGroupID: !GetAtt Bastion.Outputs.BastionSecurityGroupID
         OnPremiseDomainName: !Ref OnPremiseDomainName
         OnPremiseServerDNS: !Ref OnPremiseServerDNS
+        FIPSEnabled: !Ref FIPSEnabled
         EPOLicenseKey: !Ref EPOLicenseKey
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
@@ -643,6 +678,7 @@ Resources:
         DBEncrypted: !Ref DBEncrypted
         DBEncryptionKmsKeyARN: !Ref DBEncryptionKmsKeyARN
         AHPort: !Ref AHPort
+        AHHttpPort: !Ref AHHttpPort
         DXLPort: !Ref DXLPort
         ClientAccessCIDR: !Ref ClientAccessCIDR
         AdminEmailAddress: !Ref AdminEmailAddress

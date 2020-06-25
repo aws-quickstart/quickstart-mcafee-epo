@@ -23,6 +23,7 @@ Metadata:
       - Label:
           default: ePO Application Server Configuration
         Parameters:
+          - FIPSEnabled
           - EPOAdminUserName
           - EPOAdminPassword
           - ConfirmEPOAdminPassword
@@ -35,6 +36,7 @@ Metadata:
         Parameters:
           - AHImageId
           - AHPort
+          - AHHttpPort
           - ClientAccessCIDR
           - AHInstanceType
           - AHInstanceSize
@@ -70,6 +72,8 @@ Metadata:
         default: Parent Stack
       BaseStack:
         default: Base Stack
+      FIPSEnabled:
+        default: Enable FIPS mode
       EPOAdminUserName:
         default: Admin Username
       EPOAdminPassword:
@@ -88,6 +92,8 @@ Metadata:
         default: AH ImageID
       AHPort:
         default: AH Port
+      AHHttpPort:
+        default: Agent Handler Http Port
       ClientAccessCIDR:
         default: External Access CIDR
       AHInstanceType:
@@ -153,6 +159,13 @@ Parameters:
     MinLength: 1
     MaxLength: 256
     Type: String
+  FIPSEnabled:
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'No'
+    Description: Allow the ePO installation in FIPS mode.
+    Type: String
   EPOAdminUserName:
     Description: The global administrator username for ePO Console Access.
     MaxLength: 256
@@ -202,6 +215,12 @@ Parameters:
   AHPort:
     Default: '443'
     Description: The agent server communication(ASC) port used by the McAfee Agent to securely communicate to server.
+    MinLength: 1
+    MaxLength: 64
+    Type: String
+  AHHttpPort:
+    Default: '80'
+    Description: The agent server communication(ASC) http port used by the McAfee Agent to communicate to server.
     MinLength: 1
     MaxLength: 64
     Type: String
@@ -342,8 +361,8 @@ Resources:
           ToPort: !Ref AHPort
           CidrIp: !Ref ClientAccessCIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp: !Ref ClientAccessCIDR
       Tags:
         - Key: Name
@@ -385,13 +404,13 @@ Resources:
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
         - IpProtocol: tcp
@@ -405,13 +424,13 @@ Resources:
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
       Tags:
@@ -454,13 +473,13 @@ Resources:
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: !Ref AHHttpPort
+          ToPort: !Ref AHHttpPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
       Tags:
@@ -493,7 +512,7 @@ Resources:
         S3BucketPrefix: 'logs/elb/ah'
       ConnectionDrainingPolicy:
         Enabled: true
-        Timeout: 180
+        Timeout: 1
       ConnectionSettings:
         IdleTimeout: 600
       CrossZone: true
@@ -513,9 +532,9 @@ Resources:
           PolicyNames: []
           Protocol: TCP
           SSLCertificateId: ''
-        - InstancePort: 80
+        - InstancePort: !Ref AHHttpPort
           InstanceProtocol: TCP
-          LoadBalancerPort: 80
+          LoadBalancerPort: !Ref AHHttpPort
           PolicyNames: []
           Protocol: TCP
           SSLCertificateId: ''
@@ -572,9 +591,9 @@ Resources:
           PolicyNames: []
           Protocol: TCP
           SSLCertificateId: ''
-        - InstancePort: 80
+        - InstancePort: !Ref AHHttpPort
           InstanceProtocol: TCP
-          LoadBalancerPort: 80
+          LoadBalancerPort: !Ref AHHttpPort
           PolicyNames: []
           Protocol: TCP
           SSLCertificateId: ''
@@ -775,8 +794,8 @@ Resources:
               command: !Join
                 - ' '
                 - - !Sub node provision.js --platform aws --component ah --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack}
-                  - !Sub --threadsperchild 250 --db.username ${DBMasterUsername} --db.identifier ${DBInstanceIdentifier}  --db.database ${EPODatabaseName}
-                  - !Sub --epo.serverdns ${EPOServerDNSName} --epo.port 8080 --epo.secure_port ${EPOConsolePort} --ah.port ${AHPort}
+                  - !Sub --threadsperchild 250 --fipsmode ${FIPSEnabled} --db.username ${DBMasterUsername} --db.identifier ${DBInstanceIdentifier}  --db.database ${EPODatabaseName}
+                  - !Sub --epo.serverdns ${EPOServerDNSName} --epo.port 8080 --epo.secure_port ${EPOConsolePort} --ah.port ${AHPort} --ah.http_port ${AHHttpPort}
                   - !If
                     - cWithProxy
                     - !Sub --proxy ${WebProxy}

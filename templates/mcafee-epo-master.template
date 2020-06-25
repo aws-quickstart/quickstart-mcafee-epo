@@ -32,6 +32,7 @@ Metadata:
     - Label:
         default: ePO Application Server Configuration
       Parameters:
+      - FIPSEnabled
       - EPOLicenseKey
       - EPOAdminUserName
       - EPOAdminPassword
@@ -58,6 +59,7 @@ Metadata:
         default: Client Communication Configuration
       Parameters:
       - AHPort
+      - AHHttpPort
       - DXLPort
       - ClientAccessCIDR
     - Label:
@@ -104,6 +106,8 @@ Metadata:
         default: On Premises Domain Name
       OnPremiseServerDNS:
         default: On Premises Server DNS
+      FIPSEnabled:
+        default: Enable FIPS mode
       EPOLicenseKey:
         default: License Key
       EPOAdminUserName:
@@ -144,6 +148,8 @@ Metadata:
         default: DB Encryption Kms Key Id ARN
       AHPort:
         default: Agent Handler Port
+      AHHttpPort:
+        default: Agent Handler Http Port
       DXLPort:
         default: DXL Port
       ClientAccessCIDR:
@@ -292,6 +298,13 @@ Parameters:
       are planning to use
       a domain name instead of an IP address for the LDAP server.
     MaxLength: 256
+    Type: String
+  FIPSEnabled:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'No'
+    Description: Allow the ePO installation in FIPS mode.
     Type: String
   EPOLicenseKey:
     Default: ''
@@ -464,6 +477,13 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     Type: String
+  AHHttpPort:
+    Default: '80'
+    Description: The agent server communication(ASC) http port used by the McAfee
+      Agent to communicate to server.
+    MinLength: 1
+    MaxLength: 64
+    Type: String
   DXLPort:
     Default: '8883'
     Description: The DXL communication port used by the DXL client to enable secure
@@ -504,7 +524,7 @@ Parameters:
     ConstraintDescription: Must be a valid email address.
     Default: ''
     Description: Approver Email address where approval will be sent in case of auto
-      updates if AutoApproval is not selected.
+      updates if AutoAproval is not selected.
     Type: String
   AdminEmailAddress:
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)
@@ -574,6 +594,20 @@ Rules:
         - !Ref EPOConsolePort
         - !Ref AHPort
       AssertDescription: ePO console port and AH port should be different.
+  ValidateEPOandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref EPOConsolePort
+        - !Ref AHHttpPort
+      AssertDescription: ePO console port and AH Http port should be different.
+  ValidateAHandAHHttpPort:
+    Assertions:
+    - Assert: !Not
+      - !Equals
+        - !Ref AHPort
+        - !Ref AHHttpPort
+      AssertDescription: AH secure port and AH Http port should be different.
   MatchPassword:
     Assertions:
     - Assert: !Equals
@@ -604,28 +638,28 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-west-2:
-      MFEBASTIONHVM: ami-04e739ed6c069b343
+      MFEBASTIONHVM: ami-05fee1e830a3a24f2
 
-    ca-central-1:
-      MFEBASTIONHVM: ami-00d8e33f62f2145de
-    us-east-1:
-      MFEBASTIONHVM: ami-0131d8269d9fd7a8e
     us-east-2:
-      MFEBASTIONHVM: ami-026b1c1c0258dba29
-    eu-west-2:
-      MFEBASTIONHVM: ami-05338c59999f81067
-    eu-west-3:
-      MFEBASTIONHVM: ami-09fa2fd16af117d08
-    ap-southeast-1:
-      MFEBASTIONHVM: ami-08f1a5d1e6b4ffb74
-    ap-northeast-1:
-      MFEBASTIONHVM: ami-0ddcd5b5f0e78d82f
-    ap-southeast-2:
-      MFEBASTIONHVM: ami-0fcec06ee44d60ad1
-    us-west-1:
-      MFEBASTIONHVM: ami-0898f3c24a91f6ba1
+      MFEBASTIONHVM: ami-07b3edf57f03f1961
+    us-east-1:
+      MFEBASTIONHVM: ami-040bceb6e40dd8350
     eu-central-1:
-      MFEBASTIONHVM: ami-07955408f6f88ff96
+      MFEBASTIONHVM: ami-08fac01944d0fb1f5
+    ca-central-1:
+      MFEBASTIONHVM: ami-09ca27eb7049e1472
+    us-west-1:
+      MFEBASTIONHVM: ami-0653ff03c236c68c9
+    ap-southeast-2:
+      MFEBASTIONHVM: ami-0992aad6d6bb6bdee
+    ap-northeast-1:
+      MFEBASTIONHVM: ami-0c3b5e02646789b07
+    eu-west-3:
+      MFEBASTIONHVM: ami-0afd398901176f547
+    ap-southeast-1:
+      MFEBASTIONHVM: ami-0f49c9baf3210a529
+    eu-west-2:
+      MFEBASTIONHVM: ami-073a9b1ab8735a0e5
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
@@ -712,6 +746,7 @@ Resources:
         BastionSecurityGroupID: !GetAtt Bastion.Outputs.BastionSecurityGroupID
         OnPremiseDomainName: !Ref OnPremiseDomainName
         OnPremiseServerDNS: !Ref OnPremiseServerDNS
+        FIPSEnabled: !Ref FIPSEnabled
         EPOLicenseKey: !Ref EPOLicenseKey
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
@@ -732,6 +767,7 @@ Resources:
         DBEncrypted: !Ref DBEncrypted
         DBEncryptionKmsKeyARN: !Ref DBEncryptionKmsKeyARN
         AHPort: !Ref AHPort
+        AHHttpPort: !Ref AHHttpPort
         DXLPort: !Ref DXLPort
         ClientAccessCIDR: !Ref ClientAccessCIDR
         EnableAutoUpdate: !Ref EnableAutoUpdate
