@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.188 (8/25/20)
+
+### New Features:
+- **McAfee ePolicy Orchestrator 5.10.0 Update 8 (2.0.0.929)**
+    * This includes new images with [Update 8](https://docs.mcafee.com/bundle/epolicy-orchestrator-5.10.0-release-notes/page/GUID-D860DD35-2B63-4B72-A327-C270A3C49B75.html) for both ePO and Agent Handlers. Update 8 is cumulative in nature and includes fixes from previous updates.
+- **New updated packages, extensions and bundle**
+    * AH version: 5.10.0.3242
+    * Support Center: 5.10.0.434
+
 ## 1.0.187 (6/24/20)
 
 ### New Features:
